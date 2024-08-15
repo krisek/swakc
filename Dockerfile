@@ -2,12 +2,10 @@ FROM debian:testing-slim
 
 MAINTAINER krisek11
 
-
 #RUN apt-get update && apt-get upgrade -y && 
 RUN apt-get update && DEBIAN_FRONTEND="noninteractive" TZ=Europe/Budapest apt-get install -y  nano fish iproute2 netcat-openbsd vim tmux curl bind9-dnsutils socat tcpdump tshark iputils-tracepath inetutils-traceroute git awscli jq
 
 WORKDIR /
-
 
 RUN cd /tmp; curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"; mv kubectl /usr/bin/kubectl; chmod 755 /usr/bin/kubectl
 RUN cd /tmp; latest=$(curl -s "https://api.github.com/repos/cli/cli/releases/latest" | jq -r ". .tag_name" | sed 's/v//'); curl -L https://github.com/cli/cli/releases/download/v${latest}/gh_${latest}_linux_amd64.tar.gz --output gh_linux_amd64.tar.gz; tar zxvf gh_linux_amd64.tar.gz; mv gh_${latest}_linux_amd64/bin/gh /usr/bin/; chmod 755 /usr/bin/gh; rm -Rf gh_${latest}_linux_amd64 gh_${latest}_linux_amd64.tar.gz
