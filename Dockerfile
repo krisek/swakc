@@ -16,4 +16,7 @@ RUN cd /tmp; curl https://downloads.mongodb.com/compass/mongosh-2.2.3-linux-x64.
 ENV TERM screen
 RUN sh -c "$(curl -sSL https://git.io/install-kubent)"
 
+RUN useradd -ms /bin/bash swakc
+USER swakc
+
 CMD tmux
