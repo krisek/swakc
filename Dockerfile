@@ -14,7 +14,12 @@ RUN export MONGO_VERSION=2.3.3; cd /tmp; curl https://downloads.mongodb.com/comp
 ENV TERM screen
 RUN sh -c "$(curl -sSL https://git.io/install-kubent)"
 
-RUN useradd -u 1000 -ms /bin/bash swakc
+RUN groupadd -g 1000 swakc; useradd -u 1000 -g 1000 -ms /bin/bash swakc
+
 USER 1000
+
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+
+RUN /home/swakc/.local/bin/uv venv --python 3.13 /home/swakc/uv
 
 CMD tmux
