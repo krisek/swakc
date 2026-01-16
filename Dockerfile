@@ -3,7 +3,7 @@ FROM debian:testing-slim
 MAINTAINER krisek11
 
 #RUN apt-get update && apt-get upgrade -y && 
-RUN dpkg --add-architecture i386 && apt-get update && DEBIAN_FRONTEND="noninteractive" TZ=Europe/Budapest apt-get install -y  rsync fish iproute2 netcat-openbsd vim tmux curl bind9-dnsutils socat tcpdump tshark iputils-tracepath inetutils-traceroute git awscli jq mariadb-client postgresql-client rclone
+RUN  apt-get update && DEBIAN_FRONTEND="noninteractive" TZ=Europe/Budapest apt-get install -y  rsync fish iproute2 netcat-openbsd vim tmux curl bind9-dnsutils socat tcpdump tshark iputils-tracepath inetutils-traceroute git awscli jq mariadb-client postgresql-client 
 
 WORKDIR /
 
