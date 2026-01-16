@@ -11,7 +11,10 @@ RUN cd /tmp; curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/
 RUN cd /tmp; latest=$(curl -s "https://api.github.com/repos/cli/cli/releases/latest" | jq -r ". .tag_name" | sed 's/v//'); curl -L https://github.com/cli/cli/releases/download/v${latest}/gh_${latest}_linux_amd64.tar.gz --output gh_linux_amd64.tar.gz; tar zxvf gh_linux_amd64.tar.gz; mv gh_${latest}_linux_amd64/bin/gh /usr/bin/; chmod 755 /usr/bin/gh; rm -Rf gh_${latest}_linux_amd64 gh_${latest}_linux_amd64.tar.gz
 RUN cd /tmp; latest=$(curl -s "https://api.github.com/repos/helm/helm/releases/latest" | jq -r ". .tag_name" | sed 's/v//');   curl https://get.helm.sh/helm-v${latest}-linux-amd64.tar.gz --output helm-linux-amd64.tar.gz; tar zxvf helm-linux-amd64.tar.gz; cp linux-amd64/helm /usr/bin; chmod 755 /usr/bin/helm
 RUN export MONGO_VERSION=2.3.3; cd /tmp; curl https://downloads.mongodb.com/compass/mongosh-${MONGO_VERSION}-linux-x64.tgz --output mongosh-${MONGO_VERSION}-linux-x64.tgz; tar zxf mongosh-${MONGO_VERSION}-linux-x64.tgz; cp mongosh-${MONGO_VERSION}-linux-x64/bin/* /usr/bin; rm -Rf mongosh-${MONGO_VERSION}-linux-x64.tgz mongosh-${MONGO_VERSION}-linux-x64
-RUN curl -fsSLo /tmp/install.sh https://raw.githubusercontent.com/sinelaw/fresh/refs/heads/master/scripts/install.sh  && sh /tmp/install.sh
+
+RUN curl -fsSLo /tmp/install.sh https://raw.githubusercontent.com/sinelaw/fresh/refs/heads/master/scripts/install.sh \
+ && sh /tmp/install.sh
+
 ENV TERM screen
 RUN sh -c "$(curl -sSL https://git.io/install-kubent)"
 
