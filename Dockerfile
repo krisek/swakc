@@ -7,13 +7,12 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=Europe/Budapest
 
 RUN apt-get update && apt-get install -y \
+    systemd-standalone-sysusers \
     rsync fish iproute2 netcat-openbsd vim tmux curl \
     bind9-dnsutils socat tcpdump tshark iputils-tracepath \
     inetutils-traceroute git awscli jq \
     mariadb-client postgresql-client \
-    ca-certificates gnupg inotify-tools \
-    || { echo "=== APT FAILED ==="; cat /var/log/apt/term.log; exit 1; }
-RUN rm -rf /var/lib/apt/lists/*
+    ca-certificates gnupg inotify-tools && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /
 
