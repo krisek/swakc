@@ -42,26 +42,6 @@ RUN set -eux; \
 
 ARG TARGETARCH
 
-# ------------------------------------------------------------
-# krew (kubectl plugin manager) and plugins
-# ------------------------------------------------------------
-RUN set -eux; \
-    cd /tmp; \
-    OS=$(uname | tr '[:upper:]' '[:lower:]'); \
-    ARCH=$(uname -m); \
-    case "$ARCH" in \
-        x86_64) ARCH=amd64 ;; \
-        aarch64) ARCH=arm64 ;; \
-        *) echo "Unsupported arch $ARCH" && exit 1 ;; \
-    esac; \
-    curl -fsSLO "https://github.com/kubernetes-sigs/krew/releases/latest/download/krew-${OS}_${ARCH}.tar.gz"; \
-    tar zxvf "krew-${OS}_${ARCH}.tar.gz"; \
-    "./krew-${OS}_${ARCH}" install krew; \
-    export KREW_ROOT="/home/swakc/.krew"; \
-    export PATH="${KREW_ROOT}/bin:${PATH}"; \
-    kubectl krew install view-secret cilium-policy-gen cert-manager node-shell neat ingress-nginx whoami; \
-    rm -rf /tmp/krew-${OS}_${ARCH}*
-
 RUN set -eux; \
     case "${TARGETARCH}" in \
       amd64) GH_ARCH=amd64 ;; \
@@ -117,6 +97,26 @@ RUN groupadd -g 1000 swakc && \
     useradd -u 1000 -g 1000 -ms /bin/bash swakc
 
 USER swakc
+
+# ------------------------------------------------------------
+# krew (kubectl plugin manager) and plugins
+# ------------------------------------------------------------
+RUN set -eux; \
+    cd /tmp; \
+    OS=$(uname | tr '[:upper:]' '[:lower:]'); \
+    ARCH=$(uname -m); \
+    case "$ARCH" in \
+        x86_64) ARCH=amd64 ;; \
+        aarch64) ARCH=arm64 ;; \
+        *) echo "Unsupported arch $ARCH" && exit 1 ;; \
+    esac; \
+    curl -fsSLO "https://github.com/kubernetes-sigs/krew/releases/latest/download/krew-${OS}_${ARCH}.tar.gz"; \
+    tar zxvf "krew-${OS}_${ARCH}.tar.gz"; \
+    "./krew-${OS}_${ARCH}" install krew; \
+    export KREW_ROOT="/home/swakc/.krew"; \
+    export PATH="${KREW_ROOT}/bin:${PATH}"; \
+    kubectl krew install view-secret cilium-policy-gen cert-manager node-shell neat ingress-nginx whoami; \
+    rm -rf /tmp/krew-${OS}_${ARCH}*
 
 ENV KREW_ROOT="/home/swakc/.krew"
 ENV PATH="${KREW_ROOT}/bin:${PATH}"
