@@ -12,7 +12,8 @@ RUN apt-get update && apt-get install -y \
     inetutils-traceroute git awscli jq \
     mariadb-client postgresql-client \
     ca-certificates gnupg inotify-tools \
-    && rm -rf /var/lib/apt/lists/*
+    || { echo "=== APT FAILED ==="; cat /var/log/apt/term.log; exit 1; }
+RUN rm -rf /var/lib/apt/lists/*
 
 WORKDIR /
 
