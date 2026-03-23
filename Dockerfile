@@ -115,7 +115,7 @@ RUN set -eux; \
     "./krew-${OS}_${ARCH}" install krew; \
     export KREW_ROOT="/home/swakc/.krew"; \
     export PATH="${KREW_ROOT}/bin:${PATH}"; \
-    kubectl krew install view-secret cilium-policy-gen cert-manager node-shell neat ingress-nginx whoami; \
+    kubectl krew install view-secret cilium-policy-gen cert-manager node-shell neat whoami; \
     rm -rf /tmp/krew-${OS}_${ARCH}*
 
 ENV KREW_ROOT="/home/swakc/.krew"
