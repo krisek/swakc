@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y \
     bind9-dnsutils socat tcpdump tshark iputils-tracepath \
     inetutils-traceroute git awscli jq \
     mariadb-client postgresql-client \
-    ca-certificates gnupg \
+    ca-certificates gnupg inotify-tools \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /
@@ -25,38 +25,87 @@ RUN case "${TARGETARCH}" in \
     echo "ARCH=${ARCH} GH_ARCH=${GH_ARCH} HELM_ARCH=${HELM_ARCH} MONGO_ARCH=${MONGO_ARCH}" > /arch.env
 
 # -------- kubectl --------
-RUN . /arch.env && \
-    curl -LO "https://dl.k8s.io/release/$(curl -Ls https://dl.k8s.io/release/stable.txt)/bin/linux/${ARCH}/kubectl" && \
-    install -m 0755 kubectl /usr/bin/kubectl && rm kubectl
+ARG TARGETARCH
 
-# -------- GitHub CLI --------
-RUN . /arch.env && \
-    latest=$(curl -s https://api.github.com/repos/cli/cli/releases/latest | jq -r '.tag_name' | sed 's/v//') && \
-    curl -L "https://github.com/cli/cli/releases/download/v${latest}/gh_${latest}_linux_${GH_ARCH}.tar.gz" \
-      -o gh.tar.gz && \
-    tar zxf gh.tar.gz && \
-    mv gh_${latest}_linux_${GH_ARCH}/bin/gh /usr/bin/gh && \
-    chmod 755 /usr/bin/gh && \
-    rm -rf gh*
 
-# -------- Helm --------
-RUN . /arch.env && \
-    latest=$(curl -s https://api.github.com/repos/helm/helm/releases/latest | jq -r '.tag_name' | sed 's/v//') && \
-    curl -L "https://get.helm.sh/helm-v${latest}-linux-${HELM_ARCH}.tar.gz" \
-      -o helm.tar.gz && \
-    tar zxf helm.tar.gz && \
-    mv linux-${HELM_ARCH}/helm /usr/bin/helm && \
-    chmod 755 /usr/bin/helm && \
-    rm -rf helm.tar.gz linux-${HELM_ARCH}
+RUN set -eux; \
+    case "${TARGETARCH}" in \
+      amd64) ARCH=amd64 ;; \
+      arm64) ARCH=arm64 ;; \
+      *) echo "Unsupported arch: ${TARGETARCH}" && exit 1 ;; \
+    esac; \
+    KVER="$(curl -fsSL https://dl.k8s.io/release/stable.txt)"; \
+    curl -fsSL -o /usr/bin/kubectl \
+      "https://dl.k8s.io/release/${KVER}/bin/linux/${ARCH}/kubectl"; \
+    chmod 755 /usr/bin/kubectl
 
-# -------- mongosh --------
-RUN . /arch.env && \
-    MONGO_VERSION=2.3.3 && \
-    curl -L "https://downloads.mongodb.com/compass/mongosh-${MONGO_VERSION}-linux-${MONGO_ARCH}.tgz" \
-      -o mongosh.tgz && \
-    tar zxf mongosh.tgz && \
-    cp mongosh-${MONGO_VERSION}-linux-${MONGO_ARCH}/bin/* /usr/bin && \
-    rm -rf mongosh*
+ARG TARGETARCH
+
+# ------------------------------------------------------------
+# krew (kubectl plugin manager) and plugins
+# ------------------------------------------------------------
+RUN set -eux; \
+    cd /tmp; \
+    OS=$(uname | tr '[:upper:]' '[:lower:]'); \
+    ARCH=$(uname -m); \
+    case "$ARCH" in \
+        x86_64) ARCH=amd64 ;; \
+        aarch64) ARCH=arm64 ;; \
+        *) echo "Unsupported arch $ARCH" && exit 1 ;; \
+    esac; \
+    curl -fsSLO "https://github.com/kubernetes-sigs/krew/releases/latest/download/krew-${OS}_${ARCH}.tar.gz"; \
+    tar zxvf "krew-${OS}_${ARCH}.tar.gz"; \
+    "./krew-${OS}_${ARCH}" install krew; \
+    export KREW_ROOT="/home/swakc/.krew"; \
+    export PATH="${KREW_ROOT}/bin:${PATH}"; \
+    kubectl krew install view-secret cilium-policy-gen cert-manager node-shell neat ingress-nginx whoami; \
+    rm -rf /tmp/krew-${OS}_${ARCH}*
+
+RUN set -eux; \
+    case "${TARGETARCH}" in \
+      amd64) GH_ARCH=amd64 ;; \
+      arm64) GH_ARCH=arm64 ;; \
+      *) echo "Unsupported arch: ${TARGETARCH}" && exit 1 ;; \
+    esac; \
+    GH_VER="$(curl -fsSL https://api.github.com/repos/cli/cli/releases/latest \
+      | jq -r '.tag_name' | sed 's/^v//')"; \
+    curl -fsSL -o gh.tgz \
+      "https://github.com/cli/cli/releases/download/v${GH_VER}/gh_${GH_VER}_linux_${GH_ARCH}.tar.gz"; \
+    tar -xzf gh.tgz; \
+    install -m 0755 "gh_${GH_VER}_linux_${GH_ARCH}/bin/gh" /usr/bin/gh; \
+    rm -rf gh.tgz "gh_${GH_VER}_linux_${GH_ARCH}"
+
+ARG TARGETARCH
+
+RUN set -eux; \
+    case "${TARGETARCH}" in \
+      amd64) HELM_ARCH=amd64 ;; \
+      arm64) HELM_ARCH=arm64 ;; \
+      *) echo "Unsupported arch: ${TARGETARCH}" && exit 1 ;; \
+    esac; \
+    HELM_VER="$(curl -fsSL https://api.github.com/repos/helm/helm/releases/latest \
+      | jq -r '.tag_name' | sed 's/^v//')"; \
+    curl -fsSL -o helm.tgz \
+      "https://get.helm.sh/helm-v${HELM_VER}-linux-${HELM_ARCH}.tar.gz"; \
+    tar -xzf helm.tgz; \
+    install -m 0755 "linux-${HELM_ARCH}/helm" /usr/bin/helm; \
+    rm -rf helm.tgz "linux-${HELM_ARCH}"
+
+ARG TARGETARCH
+
+RUN set -eux; \
+    case "${TARGETARCH}" in \
+      amd64) MONGO_ARCH=x64 ;; \
+      arm64) MONGO_ARCH=arm64 ;; \
+      *) echo "Unsupported arch: ${TARGETARCH}" && exit 1 ;; \
+    esac; \
+    MONGO_VERSION=2.3.3; \
+    curl -fsSL -o mongosh.tgz \
+      "https://downloads.mongodb.com/compass/mongosh-${MONGO_VERSION}-linux-${MONGO_ARCH}.tgz"; \
+    tar -xzf mongosh.tgz; \
+    cp "mongosh-${MONGO_VERSION}-linux-${MONGO_ARCH}/bin/"* /usr/bin/; \
+    rm -rf mongosh.tgz "mongosh-${MONGO_VERSION}-linux-${MONGO_ARCH}"
+
 
 # -------- kubent --------
 ENV TERM=screen
@@ -67,6 +116,9 @@ RUN groupadd -g 1000 swakc && \
     useradd -u 1000 -g 1000 -ms /bin/bash swakc
 
 USER swakc
+
+ENV KREW_ROOT="/home/swakc/.krew"
+ENV PATH="${KREW_ROOT}/bin:${PATH}"
 
 # -------- uv / Python --------
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
