@@ -86,6 +86,21 @@ RUN set -eux; \
     cp "mongosh-${MONGO_VERSION}-linux-${MONGO_ARCH}/bin/"* /usr/bin/; \
     rm -rf mongosh.tgz "mongosh-${MONGO_VERSION}-linux-${MONGO_ARCH}"
 
+ARG TARGETARCH
+
+RUN set -eux; \
+    cd /tmp; \
+    case "${TARGETARCH}" in \
+      amd64) KAFKACTL_ARCH=amd64 ;; \
+      arm64) KAFKACTL_ARCH=arm64 ;; \
+      *) echo "Unsupported arch: ${TARGETARCH}" && exit 1 ;; \
+    esac; \
+    KAFKACTL_VER="$(curl -fsSL https://api.github.com/repos/deviceinsight/kafkactl/releases/latest | jq -r '.tag_name' | sed 's/^v//')"; \
+    curl -fsSL -o kafkactl.tgz \
+      "https://github.com/deviceinsight/kafkactl/releases/download/v${KAFKACTL_VER}/kafkactl_${KAFKACTL_VER}_linux_${KAFKACTL_ARCH}.tar.gz"; \
+    tar -xzf kafkactl.tgz; \
+    install -m 0755 kafkactl /usr/bin/kafkactl; \
+    rm -rf kafkactl.tgz kafkactl
 
 # -------- kubent --------
 ENV TERM=screen
